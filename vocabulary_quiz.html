@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vocabulary Quiz</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
+    }
+    .container {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 0.5px solid #e0e0d8;
+      padding: 2rem;
+      width: 100%;
+      max-width: 680px;
+    }
+    .progress-bar-bg { height: 6px; background: #f0f0ea; border-radius: 3px; margin-bottom: 1.5rem; }
+    .progress-bar-fill { height: 6px; background: #1D9E75; border-radius: 3px; transition: width 0.4s ease; }
+    .topic-badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 8px; background: #f0f0ea; color: #666; border: 0.5px solid #e0e0d8; margin-bottom: 0.75rem; }
+    .q-number { font-size: 13px; color: #888; margin-bottom: 0.5rem; }
+    .q-text { font-size: 16px; color: #1a1a1a; line-height: 1.6; margin-bottom: 1.25rem; font-weight: 500; }
+    .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.25rem; }
+    .opt-btn {
+      background: #fff;
+      border: 0.5px solid #ccc;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 15px;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .opt-btn:hover:not(:disabled) { background: #f5f5f0; border-color: #aaa; }
+    .opt-btn.correct { background: #E1F5EE; border-color: #1D9E75; color: #085041; font-weight: 500; }
+    .opt-btn.wrong { background: #FCEBEB; border-color: #E24B4A; color: #501313; }
+    .opt-btn.reveal-correct { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+    .feedback { font-size: 14px; padding: 10px 14px; border-radius: 8px; margin-bottom: 1.25rem; display: none; }
+    .feedback.show { display: block; }
+    .feedback.correct { background: #E1F5EE; color: #085041; border: 0.5px solid #1D9E75; }
+    .feedback.wrong { background: #FCEBEB; color: #501313; border: 0.5px solid #E24B4A; }
+    .nav-row { display: flex; justify-content: space-between; align-items: center; }
+    .btn-next { padding: 9px 22px; border-radius: 8px; border: 0.5px solid #ccc; background: #fff; color: #1a1a1a; font-size: 15px; cursor: pointer; display: none; }
+    .btn-next.show { display: block; }
+    .btn-next:hover { background: #f5f5f0; }
+    .score-tag { font-size: 13px; color: #888; }
+    .result-box { text-align: center; padding: 2rem 1rem; }
+    .result-score { font-size: 48px; font-weight: 500; color: #1D9E75; }
+    .result-label { font-size: 16px; color: #888; margin: 0.5rem 0 1.5rem; }
+    .result-msg { font-size: 15px; color: #1a1a1a; margin-bottom: 1.5rem; }
+    .btn-retry { padding: 10px 28px; border-radius: 8px; border: 0.5px solid #ccc; background: #fff; color: #1a1a1a; font-size: 15px; cursor: pointer; margin: 0 8px; }
+    .btn-retry:hover { background: #f5f5f0; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+    .filter-btn { font-size: 12px; padding: 4px 12px; border-radius: 20px; border: 0.5px solid #ccc; background: #fff; color: #666; cursor: pointer; }
+    .filter-btn.active { background: #E1F5EE; border-color: #1D9E75; color: #085041; font-weight: 500; }
+    .start-box { text-align: center; padding: 1.5rem 0; }
+    .start-title { font-size: 20px; font-weight: 500; color: #1a1a1a; margin-bottom: 0.5rem; }
+    .start-sub { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+    .btn-start { padding: 10px 32px; border-radius: 8px; border: 0.5px solid #1D9E75; background: #E1F5EE; color: #085041; font-size: 15px; cursor: pointer; font-weight: 500; }
+    .btn-start:hover { background: #9FE1CB; }
+    #q-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="app"></div>
+</div>
+
+<script>
+const ALL_TOPICS = [
+  "Hobbies & Leisure",
+  "Family & Relationships",
+  "Work & Careers",
+  "Education",
+  "Sports & Health",
+  "Environment"
+];
+
+const ALL_QUESTIONS = [
+  {topic:"Hobbies & Leisure", q:"Andrew discovered his __________ for cooking when he was in high school. Now, he experiments with new recipes each week.", opts:["solution","leisure time","passion"], ans:2},
+  {topic:"Hobbies & Leisure", q:"There are many ways we can do __________ when we are under too much pressure, such as going on a short trip with friends.", opts:["to balance","to unwind","to refresh"], ans:1},
+  {topic:"Hobbies & Leisure", q:"Different people will have different ways __________ — some eat their favourite food, others listen to songs or take a nap.", opts:["to maintain a work-life balance","to boost their energy levels","to refresh"], ans:1},
+  {topic:"Hobbies & Leisure", q:"If you travel to a new country, try local food and explore unusual places to make the most of your __________ there.", opts:["energy level","relationship","leisure time"], ans:2},
+  {topic:"Hobbies & Leisure", q:"Many young adults find it difficult __________ after graduating, stuck between career and building strong relationships.", opts:["to unwind","to reduce","to maintain a work-life balance"], ans:2},
+  {topic:"Hobbies & Leisure", q:"Reading novels is my favourite activity __________ my mind after studying for a long time.", opts:["to refresh","to boost","to maintain"], ans:0},
+  {topic:"Hobbies & Leisure", q:"I have a __________ for reading. It allows me to unwind and escape into different worlds after a busy day.", opts:["leisure time","passion","hobby"], ans:1},
+  {topic:"Hobbies & Leisure", q:"Sometimes I enjoy spending my __________ alone, especially when I need to refresh my mind.", opts:["leisure time","passion","energy level"], ans:0},
+  {topic:"Family & Relationships", q:"During their family vacation, the parents made it a priority to __________ with their children, engaging in fun activities.", opts:["look up to","strengthen the bond(s) with","have quality time"], ans:2},
+  {topic:"Family & Relationships", q:"I always __________ my grandfather for his wisdom, kindness, and the way he treats everyone with respect.", opts:["am brought up","look up to","stay connected with"], ans:1},
+  {topic:"Family & Relationships", q:"Liam was raised in a __________, so he only lived with his parents and sister, rarely seeing grandparents or aunts.", opts:["extended family","nuclear family","quality time"], ans:1},
+  {topic:"Family & Relationships", q:"Sophia spends every holiday with her __________, including grandparents, uncles, aunts, and cousins.", opts:["quality time","nuclear family","extended family"], ans:2},
+  {topic:"Family & Relationships", q:"Social media and various forms of communication facilitate our ability to __________ each other across distances.", opts:["stay connected with","look up to","have quality time"], ans:0},
+  {topic:"Family & Relationships", q:"Team-building activities can help colleagues __________ with each other through communication and collaboration.", opts:["stay connected","enjoy the company","strengthen the bond"], ans:2},
+  {topic:"Family & Relationships", q:"My grandfather believes that family should always __________ no matter how busy life gets.", opts:["stay connected","look up to","have quality time"], ans:0},
+  {topic:"Work & Careers", q:"I decided to become __________ after leaving my office job. Now, I manage my own schedule and choose my projects.", opts:["self-employed","qualified","dedicated"], ans:0},
+  {topic:"Work & Careers", q:"During the holiday season, store employees have a __________. They often work extra hours to serve all customers.", opts:["well-paid job","heavy workload","work-life balance"], ans:1},
+  {topic:"Work & Careers", q:"Maria hopes to __________ to team leader next month after working very hard and impressing her boss.", opts:["get promoted","be in charge of","get qualified"], ans:0},
+  {topic:"Work & Careers", q:"He is __________ to teach English because he studied it at university and has a special teaching certificate.", opts:["self-employed","qualified","well-paid"], ans:1},
+  {topic:"Work & Careers", q:"I have a __________ job at a local computer company. I earn enough money to support my family and save.", opts:["well-paid","self-employed","heavy workload"], ans:0},
+  {topic:"Work & Careers", q:"I am __________ planning the end-of-year party for our team, including booking the venue and sending invitations.", opts:["well-paid for","in charge of","qualified for"], ans:1},
+  {topic:"Education", q:"Yesterday, Ms. Jane __________ the ancient Mayan civilization, discussing their impressive structures and cultural significance.", opts:["lectured on","peer-pressured","dedicated"], ans:0},
+  {topic:"Education", q:"People often share achievements online, which unexpectedly creates __________ among those following different paths.", opts:["peer pressure","heavy workload","tight deadlines"], ans:0},
+  {topic:"Education", q:"As a student, Sarah often has to __________ to finish her assignments on time, learning efficient time management.", opts:["gain useful knowledge","work to tight deadlines","broaden her horizons"], ans:1},
+  {topic:"Education", q:"Studying history helps students __________ about past events and develop critical thinking skills.", opts:["gain useful knowledge","work to tight deadlines","be dedicated"], ans:0},
+  {topic:"Education", q:"Emily is a __________ student who attends all classes, completes assignments on time, and seeks help when needed.", opts:["peer-pressured","qualified","dedicated"], ans:2},
+  {topic:"Education", q:"Traveling to different countries helps people __________ by learning about new cultures and traditions.", opts:["gain useful knowledge","work to tight deadlines","broaden their horizons"], ans:2},
+  {topic:"Sports & Health", q:"Many young people dream of becoming professional __________ and representing their country in international competitions.", opts:["athletes","keep-fit enthusiasts","players"], ans:0},
+  {topic:"Sports & Health", q:"There are a lot of __________ who enjoy activities like running, yoga, and cycling to stay in shape.", opts:["athletes","keep-fit enthusiasts","sportspeople"], ans:1},
+  {topic:"Sports & Health", q:"Playing a sport regularly is a great way __________ and stay strong, benefiting both body and mind.", opts:["to get lean","to boost their energy levels","to stay qualified"], ans:0},
+  {topic:"Sports & Health", q:"Sports also help people __________ by reducing stress and making them feel more positive.", opts:["take up a sport","get rid of negative energies","broaden their horizons"], ans:1},
+  {topic:"Sports & Health", q:"I decided to __________, and now I play badminton with my friends every weekend to stay fit.", opts:["get lean","take up a sport","boost my energy levels"], ans:1},
+  {topic:"Environment", q:"An environmental problem in many communities is __________ in urban areas, caused by emissions from vehicles and factories.", opts:["poor air quality","exhaust fumes","recycling waste"], ans:0},
+  {topic:"Environment", q:"The polluted atmosphere, mainly from __________ from vehicles, could lead to respiratory diseases such as asthma.", opts:["poor air quality","exhaust fumes","eco-friendly products"], ans:1},
+  {topic:"Environment", q:"Citizens should be encouraged to use __________, such as tote bags for shopping and glass bottles.", opts:["exhaust fumes","poor air quality","eco-friendly products"], ans:2},
+  {topic:"Environment", q:"To reduce garbage sent to landfill, many cities encourage residents to __________.", opts:["raise awareness","recycle waste","use eco-friendly products"], ans:1},
+  {topic:"Environment", q:"The government started a campaign to __________ of the dangers of smoking to protect public health.", opts:["raise people's awareness","recycle waste","reduce exhaust fumes"], ans:0},
+  {topic:"Environment", q:"In heavily __________ areas, communities struggle to access clean and safe drinking water.", opts:["eco-friendly","polluted","recycled"], ans:1},
+];
+
+let selectedTopics = [...ALL_TOPICS];
+let questions = [];
+let current = 0;
+let score = 0;
+let answered = false;
+let phase = "start";
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  const filtered = ALL_QUESTIONS.filter(q => selectedTopics.includes(q.topic));
+  questions = shuffle(filtered);
+  current = 0;
+  score = 0;
+  answered = false;
+  phase = "quiz";
+  render();
+}
+
+function getResultMsg(pct) {
+  if (pct === 100) return "Perfect score! Outstanding work!";
+  if (pct >= 80) return "Great job! You have a strong vocabulary.";
+  if (pct >= 60) return "Good effort! Keep reviewing the topics you found tricky.";
+  return "Keep practicing — you'll improve with each review!";
+}
+
+function render() {
+  const app = document.getElementById("app");
+  if (phase === "start") {
+    app.innerHTML = `
+      <div class="start-box">
+        <div class="start-title">Vocabulary Quiz</div>
+        <div class="start-sub">${ALL_QUESTIONS.length} questions across 6 topics. Select topics to practise:</div>
+        <div class="filter-row" id="filters"></div>
+        <div id="q-count"></div>
+        <button class="btn-start" onclick="startQuiz()">Start quiz</button>
+      </div>`;
+    renderFilters();
+    return;
+  }
+  if (phase === "result") {
+    const pct = Math.round((score / questions.length) * 100);
+    app.innerHTML = `
+      <div class="result-box">
+        <div class="result-score">${score}/${questions.length}</div>
+        <div class="result-label">${pct}% correct</div>
+        <div class="result-msg">${getResultMsg(pct)}</div>
+        <button class="btn-retry" onclick="phase='start';render()">Change topics</button>
+        <button class="btn-retry" onclick="startQuiz()">Try again</button>
+      </div>`;
+    return;
+  }
+  const q = questions[current];
+  const pct = Math.round((current / questions.length) * 100);
+  app.innerHTML = `
+    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="topic-badge">${q.topic}</div>
+    <div class="q-number">Question ${current + 1} of ${questions.length}</div>
+    <div class="q-text">${q.q}</div>
+    <div class="options" id="opts"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-row">
+      <div class="score-tag">Score: ${score}</div>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">${current + 1 < questions.length ? "Next →" : "See results"}</button>
+    </div>`;
+  const opts = document.getElementById("opts");
+  q.opts.forEach((o, i) => {
+    const b = document.createElement("button");
+    b.className = "opt-btn";
+    b.textContent = o;
+    b.onclick = () => selectOpt(i);
+    opts.appendChild(b);
+  });
+}
+
+function renderFilters() {
+  const f = document.getElementById("filters");
+  if (!f) return;
+  f.innerHTML = ALL_TOPICS.map(t =>
+    `<button class="filter-btn ${selectedTopics.includes(t) ? 'active' : ''}" onclick="toggleTopic('${t}')">${t}</button>`
+  ).join("");
+  const cnt = ALL_QUESTIONS.filter(q => selectedTopics.includes(q.topic)).length;
+  document.getElementById("q-count").textContent = `${cnt} question${cnt !== 1 ? "s" : ""} selected`;
+}
+
+function toggleTopic(t) {
+  if (selectedTopics.includes(t)) {
+    if (selectedTopics.length === 1) return;
+    selectedTopics = selectedTopics.filter(x => x !== t);
+  } else {
+    selectedTopics.push(t);
+  }
+  renderFilters();
+}
+
+function selectOpt(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const btns = document.querySelectorAll(".opt-btn");
+  const fb = document.getElementById("feedback");
+  btns.forEach(b => b.disabled = true);
+  if (i === q.ans) {
+    btns[i].classList.add("correct");
+    score++;
+    fb.className = "feedback show correct";
+    fb.textContent = "Correct!";
+  } else {
+    btns[i].classList.add("wrong");
+    btns[q.ans].classList.add("reveal-correct");
+    fb.className = "feedback show wrong";
+    fb.textContent = `Not quite. The correct answer is: "${q.opts[q.ans]}"`;
+  }
+  document.getElementById("btn-next").classList.add("show");
+}
+
+function nextQ() {
+  current++;
+  answered = false;
+  if (current >= questions.length) {
+    phase = "result";
+  }
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
