@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vocabulary Quiz</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:2rem 1rem;}
+.container{background:#fff;border-radius:12px;border:1px solid #e0e0d8;padding:2rem;width:100%;max-width:720px;}
+h1{font-size:20px;font-weight:600;color:#1a1a1a;margin-bottom:4px;}
+.subtitle{font-size:13px;color:#888;margin-bottom:1.5rem;}
+.filter-label{font-size:13px;color:#555;margin-bottom:8px;font-weight:500;}
+.filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem;}
+.filter-btn{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid #ccc;background:#fff;color:#555;cursor:pointer;transition:all 0.15s;}
+.filter-btn.active{background:#E1F5EE;border-color:#1D9E75;color:#085041;font-weight:500;}
+.q-count{font-size:13px;color:#888;margin-bottom:1.25rem;}
+.btn-start{padding:10px 32px;border-radius:8px;border:1px solid #1D9E75;background:#E1F5EE;color:#085041;font-size:15px;cursor:pointer;font-weight:500;}
+.btn-start:hover{background:#b6edd8;}
+.btn-start:disabled{opacity:0.4;cursor:not-allowed;}
+.progress-wrap{margin-bottom:1.25rem;}
+.progress-bar-bg{height:6px;background:#f0f0ea;border-radius:3px;}
+.progress-bar-fill{height:6px;background:#1D9E75;border-radius:3px;transition:width 0.4s ease;}
+.progress-info{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-top:4px;}
+.task-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:6px;background:#f0f0ea;color:#666;border:1px solid #e0e0d8;margin-bottom:6px;}
+.topic-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:6px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;margin-bottom:6px;margin-left:6px;}
+.q-text{font-size:16px;color:#1a1a1a;line-height:1.7;margin-bottom:1.25rem;font-weight:500;}
+.options{display:flex;flex-direction:column;gap:9px;margin-bottom:1.25rem;}
+.opt-btn{background:#fff;border:1px solid #d0d0c8;border-radius:8px;padding:11px 16px;text-align:left;font-size:15px;color:#1a1a1a;cursor:pointer;transition:background 0.15s,border-color 0.15s;}
+.opt-btn:hover:not(:disabled){background:#f5f5f0;border-color:#aaa;}
+.opt-btn.correct{background:#E1F5EE;border-color:#1D9E75;color:#085041;font-weight:500;}
+.opt-btn.wrong{background:#FCEBEB;border-color:#E24B4A;color:#501313;}
+.opt-btn.reveal{background:#E1F5EE;border-color:#1D9E75;color:#085041;}
+.fill-area{margin-bottom:1.25rem;}
+.fill-context{font-size:14px;color:#555;line-height:1.9;background:#f9f9f6;border-radius:8px;padding:14px 16px;margin-bottom:12px;border:1px solid #e8e8e0;}
+.fill-context strong{color:#1a1a1a;}
+.word-bank-label{font-size:12px;color:#888;margin-bottom:6px;font-weight:500;}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.wb-chip{font-size:13px;padding:5px 13px;border-radius:20px;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;transition:all 0.15s;}
+.wb-chip:hover:not(.used):not(:disabled){background:#f0f0ea;border-color:#aaa;}
+.wb-chip.used{opacity:0.35;cursor:not-allowed;}
+.blanks-list{display:flex;flex-direction:column;gap:10px;}
+.blank-row{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#555;flex-wrap:wrap;}
+.blank-num{min-width:24px;font-weight:600;color:#1D9E75;padding-top:7px;}
+.blank-col{display:flex;flex-direction:column;gap:4px;}
+.blank-box{min-width:200px;padding:7px 12px;border-radius:6px;border:1.5px solid #ccc;background:#fff;font-size:14px;color:#1a1a1a;cursor:pointer;text-align:center;transition:border-color 0.15s;}
+.blank-box.filled{border-color:#1D9E75;background:#E1F5EE;color:#085041;font-weight:500;}
+.blank-box.correct-b{border-color:#1D9E75;background:#E1F5EE;color:#085041;font-weight:500;cursor:default;}
+.blank-box.wrong-b{border-color:#E24B4A;background:#FCEBEB;color:#501313;cursor:default;}
+.blank-box.active-b{border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,0.15);}
+.blank-explain{font-size:12px;color:#555;line-height:1.5;display:none;background:#FFF9F0;border:1px solid #F5E6C8;border-radius:5px;padding:5px 9px;max-width:360px;}
+.blank-explain.show{display:block;}
+.blank-explain.correct-exp{background:#f0fbf6;border-color:#a8dcc2;color:#085041;}
+.blank-explain.wrong-exp{background:#fff5f5;border-color:#f5c2c2;color:#7a1a1a;}
+.fill-submit{padding:8px 20px;border-radius:8px;border:1px solid #1D9E75;background:#E1F5EE;color:#085041;font-size:14px;cursor:pointer;font-weight:500;margin-top:4px;}
+.fill-submit:hover{background:#b6edd8;}
+.fill-submit:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* Feedback box for MCQ */
+.feedback{font-size:14px;padding:12px 16px;border-radius:8px;margin-bottom:1.25rem;display:none;line-height:1.7;}
+.feedback.show{display:block;}
+.feedback.correct{background:#E1F5EE;color:#085041;border:1px solid #1D9E75;}
+.feedback.wrong{background:#FCEBEB;color:#501313;border:1px solid #E24B4A;}
+.feedback.partial{background:#FFF7E6;color:#7c4a00;border:1px solid #F5A623;}
+.feedback-title{font-weight:600;margin-bottom:4px;}
+.feedback-ans{margin-bottom:4px;}
+.feedback-why{font-size:13px;opacity:0.9;}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center;}
+.btn-next{padding:9px 22px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;display:none;}
+.btn-next.show{display:block;}
+.btn-next:hover{background:#f5f5f0;}
+.result-box{text-align:center;padding:2.5rem 1rem;}
+.result-score{font-size:52px;font-weight:600;color:#1D9E75;}
+.result-label{font-size:15px;color:#888;margin:6px 0 1.5rem;}
+.result-msg{font-size:15px;color:#1a1a1a;margin-bottom:2rem;}
+.result-breakdown{text-align:left;margin-bottom:2rem;}
+.breakdown-title{font-size:13px;font-weight:600;color:#555;margin-bottom:10px;}
+.breakdown-row{display:flex;justify-content:space-between;font-size:13px;color:#555;padding:6px 0;border-bottom:1px solid #f0f0ea;}
+.breakdown-row:last-child{border-bottom:none;}
+.btn-group{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-retry{padding:10px 24px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;}
+.btn-retry:hover{background:#f5f5f0;}
+.btn-retry.primary{background:#E1F5EE;border-color:#1D9E75;color:#085041;font-weight:500;}
+.btn-retry.primary:hover{background:#b6edd8;}
+.start-center{display:flex;flex-direction:column;align-items:center;}
+</style>
+</head>
+<body>
+<div class="container"><div id="app"></div></div>
+<script>
+const TOPICS=["Hobbies & Leisure","Family & Relationships","Work & Careers","Education","Sports & Health","Environment"];
+
+const QUESTIONS=[
+// ══ HOBBIES & LEISURE — Task 1 ══
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"Andrew discovered his __________ for cooking when he was in high school. Now, he experiments with new recipes each week and dreams of opening his own restaurant.",
+ opts:["A. solution","B. leisure time","C. passion"],ans:2,
+ explanation:"\"Passion\" means a strong enthusiasm or love for something. Andrew's deep interest in cooking is a passion, not a solution (answer to a problem) or leisure time (free time)."},
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"There are many ways that we can do __________ when we are under too much pressure. One of the most common ways is to go on a short trip with friends.",
+ opts:["A. to balance","B. to unwind","C. to refresh"],ans:1,
+ explanation:"\"To unwind\" means to relax and release stress. Going on a trip to relieve pressure is a classic way to unwind. \"To refresh\" is close but collocates with \"mind\", not used alone here."},
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"Different people will have different ways __________. Some prefer to eat their favourite food while others may just need a short time to relax, listen to songs or take a nap.",
+ opts:["A. to maintain a work-life balance","B. to boost their energy levels","C. to refresh"],ans:1,
+ explanation:"\"To boost their energy levels\" fits because all activities listed (eating favourite food, relaxing, listening to music, napping) are ways people recharge. Boosting energy = getting energy back."},
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"If you travel to a new country, you should consider trying local food, exploring unusual places and activities to make the most of your __________ there.",
+ opts:["A. energy level","B. relationship","C. leisure time"],ans:2,
+ explanation:"\"Leisure time\" = free time. When travelling, you want to make the most of your free time by exploring. Energy level and relationship don't fit this context."},
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"Many young adults find it difficult __________ after graduating from university — stuck between climbing up their career path and building strong relationships.",
+ opts:["A. to unwind","B. to reduce","C. to maintain a work-life balance"],ans:2,
+ explanation:"\"To maintain a work-life balance\" means keeping a healthy equilibrium between work and personal life. The sentence describes exactly that struggle — career vs. relationships."},
+{topic:"Hobbies & Leisure",task:"Task 1",type:"mcq",
+ q:"Reading novels is my favourite activity __________ my mind after studying for a long time or when I want to escape reality for a while.",
+ opts:["A. to refresh","B. to boost","C. to maintain"],ans:0,
+ explanation:"\"To refresh my mind\" = to clear and revitalise your thinking. We say \"refresh the/my mind\". \"Boost\" needs an object like energy, and \"maintain\" means to keep something steady."},
+
+// HOBBIES & LEISURE — Task 2
+{topic:"Hobbies & Leisure",task:"Task 2",type:"fill",
+ wordBank:["passion","unwind","leisure time","refresh","boost my energy levels","maintain a work-life balance"],
+ context:`<strong>Do you have any hobbies?</strong><br>Yes, I have a <em>(1)</em> for reading. It allows me to <em>(2)</em> and escape into different worlds, which helps me relax after a busy day.`,
+ blanks:[
+   {num:1,ans:"passion",explain:"\"Passion for\" + noun/gerund = strong love for something. e.g. passion for reading, passion for music."},
+   {num:2,ans:"unwind",explain:"\"Unwind\" = relax after stress. Reading and escaping into different worlds is a way to unwind."},
+ ]},
+{topic:"Hobbies & Leisure",task:"Task 2",type:"fill",
+ wordBank:["passion","unwind","leisure time","refresh","boost my energy levels","maintain a work-life balance"],
+ context:`<strong>Do you prefer going out on your own or with friends?</strong><br>It depends on my mood. Sometimes I enjoy spending my <em>(3)</em> alone, especially when I need to <em>(4)</em> my mind. However, when I am in a good mood, I love going out with friends since they always have ways to <em>(5)</em>.`,
+ blanks:[
+   {num:3,ans:"leisure time",explain:"\"Leisure time\" = free time when you are not working. We \"spend leisure time\" doing activities we enjoy."},
+   {num:4,ans:"refresh",explain:"\"Refresh my mind\" = clear your head and feel mentally renewed. This phrase always collocates with \"mind\"."},
+   {num:5,ans:"boost my energy levels",explain:"Friends who are fun and energetic help \"boost energy levels\" — increase your vitality and positivity."},
+ ]},
+{topic:"Hobbies & Leisure",task:"Task 2",type:"fill",
+ wordBank:["passion","unwind","leisure time","refresh","boost my energy levels","maintain a work-life balance"],
+ context:`<strong>Which hobby do you like to try in the future?</strong><br>I'd like to try yoga because it would help me relax after work so that I can <em>(6)</em>. Also, regular yoga practice can <em>(7)</em>, making me feel more active during the day.`,
+ blanks:[
+   {num:6,ans:"maintain a work-life balance",explain:"Yoga helps you balance work stress and personal wellbeing — that is \"maintaining a work-life balance\"."},
+   {num:7,ans:"boost my energy levels",explain:"Regular yoga increases your physical and mental energy — it \"boosts energy levels\", making you feel more active."},
+ ]},
+
+// ══ FAMILY & RELATIONSHIPS — Task 1 ══
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"During their family vacation, the parents made it a priority to __________ with their children, engaging in fun activities and creating lasting memories together.",
+ opts:["A. look up to","B. strengthen the bond(s) with","C. have quality time"],ans:2,
+ explanation:"\"Have quality time\" = spend meaningful, focused time together. The key clues are \"engaging in fun activities\" and \"creating lasting memories\" — this is quality time, not admiring (look up to) or bonding in a broader sense."},
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"I always __________ my grandfather for his wisdom, kindness, and the way he treats everyone with respect.",
+ opts:["A. am brought up","B. look up to","C. stay connected with"],ans:1,
+ explanation:"\"Look up to someone\" = admire and respect someone. The clues are wisdom, kindness, and the way he treats people — these are qualities you admire. \"Am brought up\" means to be raised/educated, which is different."},
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"Liam was raised in a __________, so he only lived with his parents and sister. He rarely saw his grandparents, aunts, or uncles except on special occasions.",
+ opts:["A. extended family","B. nuclear family","C. quality time"],ans:1,
+ explanation:"A \"nuclear family\" consists of only parents and their children. An \"extended family\" includes grandparents, aunts, uncles, cousins, etc. Since Liam only lived with parents and sister, it's a nuclear family."},
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"Sophia spends every holiday with her __________, including her grandparents, uncles, aunts, and cousins.",
+ opts:["A. quality time","B. nuclear family","C. extended family"],ans:2,
+ explanation:"\"Extended family\" includes relatives beyond parents and siblings: grandparents, aunts, uncles, cousins. The sentence lists all these, so it's clearly extended family."},
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"In today's digital era, social media and various forms of communication facilitate our ability to __________ each other.",
+ opts:["A. stay connected with","B. look up to","C. have quality time"],ans:0,
+ explanation:"\"Stay connected with\" = keep in touch with. Social media and communication tools help us maintain contact with others — that is staying connected, not admiring (look up to) or spending quality time."},
+{topic:"Family & Relationships",task:"Task 1",type:"mcq",
+ q:"Participating in team-building activities can help colleagues __________ with each other through engaging physical activities.",
+ opts:["A. stay connected","B. enjoy the company","C. strengthen the bond"],ans:2,
+ explanation:"\"Strengthen the bond\" = make the relationship closer and stronger. Team-building is specifically designed to deepen connections. \"Stay connected\" just means keep in touch, which is weaker."},
+
+// FAMILY & RELATIONSHIPS — Task 2
+{topic:"Family & Relationships",task:"Task 2",type:"fill",
+ wordBank:["nuclear family","extended family","quality time","strengthen the bonds","stay connected","looked up to"],
+ context:`One person I truly admire in my family is my grandfather. He is very kind and hardworking, and I have always <em>(1)</em> him. He is part of my <em>(2)</em>, but we are very close because I grew up visiting him often.<br><br>Spending <em>(3)</em> with him has taught me the value of patience and kindness. My grandfather believes that family should always <em>(4)</em> no matter how busy life gets. He organizes gatherings to <em>(5)</em> between relatives. Thanks to him, our <em>(6)</em> and extended family stay close.`,
+ blanks:[
+   {num:1,ans:"looked up to",explain:"Past perfect \"have always looked up to\" = have always admired. Use past participle \"looked up to\" after \"have always\"."},
+   {num:2,ans:"extended family",explain:"Grandfather is not a parent or sibling — he belongs to the extended family. The nuclear family is only parents + children."},
+   {num:3,ans:"quality time",explain:"\"Spending quality time\" = having meaningful, focused time together. The result (learning values) shows this was meaningful time."},
+   {num:4,ans:"stay connected",explain:"\"Stay connected\" = keep in touch. After \"should always\", we use the base form of the verb: stay (not stayed/staying)."},
+   {num:5,ans:"strengthen the bonds",explain:"Organising family gatherings is a way to make family relationships closer — to \"strengthen the bonds\"."},
+   {num:6,ans:"nuclear family",explain:"\"Our nuclear family\" = the immediate family (parents + children). This contrasts with the \"extended family\" mentioned right after."},
+ ]},
+
+// ══ WORK & CAREERS — Task 1 ══
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"I decided to become __________ after leaving my office job. Now, I manage my own schedule and choose which projects to work on.",
+ opts:["A. self-employed","B. in charge of","C. qualified"],ans:0,
+ explanation:"\"Self-employed\" = working for yourself, not for a company. Managing your own schedule and choosing projects are key features of being self-employed."},
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"During the holiday season, the store employees have a __________. They often work extra hours to serve all the customers.",
+ opts:["A. well-paid job","B. heavy workload","C. promotion"],ans:1,
+ explanation:"\"Heavy workload\" = a large amount of work to do. Working extra hours during a busy season perfectly describes a heavy workload."},
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"Maria hopes to __________ to team leader next month. She has worked very hard, and her boss is happy with her progress.",
+ opts:["A. get promoted","B. be in charge of","C. stay self-employed"],ans:0,
+ explanation:"\"Get promoted\" = move up to a higher position. Maria is hoping for a higher role (team leader) as a reward for her hard work."},
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"He is __________ to teach English because he studied it at university, has a special teaching certificate and two years of classroom experience.",
+ opts:["A. self-employed","B. well-paid","C. qualified"],ans:2,
+ explanation:"\"Qualified\" = having the right education, skills, or certificates to do a job. A university degree + certificate + experience makes him qualified to teach."},
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"I have a __________ job at a local computer company. I earn enough money to support my family and save for the future.",
+ opts:["A. well-paid","B. self-employed","C. heavy workload"],ans:0,
+ explanation:"\"Well-paid\" = earning a good salary. Earning enough to support family and save money is the sign of a well-paid job. \"Self-employed\" means working for yourself, which contradicts \"at a company\"."},
+{topic:"Work & Careers",task:"Task 1",type:"mcq",
+ q:"I am __________ planning the end-of-year party for our team. My tasks include booking the venue and sending out invitations.",
+ opts:["A. well-paid for","B. in charge of","C. qualified for"],ans:1,
+ explanation:"\"In charge of\" + noun/gerund = responsible for. Being responsible for planning the party and managing its tasks means you are \"in charge of\" it."},
+
+// WORK & CAREERS — Task 2
+{topic:"Work & Careers",task:"Task 2",type:"fill",
+ wordBank:["well-paid","qualified","heavy workload","in charge of","get promoted","self-employed"],
+ context:`<strong>Have you ever had a part-time job while studying?</strong><br>I once had a part-time job at a local café. It wasn't <em>(1)</em>, but I enjoyed meeting new people. Although I wasn't fully <em>(2)</em> for restaurant work at first, I learned a lot about customer service.`,
+ blanks:[
+   {num:1,ans:"well-paid",explain:"\"Well-paid\" = earning a good salary. The contrast \"but I enjoyed it\" implies the pay wasn't great. Adjectives after \"wasn't\" stay in base form."},
+   {num:2,ans:"qualified",explain:"\"Qualified for\" = having the necessary skills/training. Being new to café work means you weren't fully qualified yet."},
+ ]},
+{topic:"Work & Careers",task:"Task 2",type:"fill",
+ wordBank:["well-paid","qualified","heavy workload","in charge of","get promoted","self-employed"],
+ context:`<strong>Why did you choose to do that type of work?</strong><br>I chose that job because I wanted practical experience. It often meant handling a <em>(3)</em>, especially during busy hours. I also got to <em>(4)</em> training new staff on how to use the coffee machine.`,
+ blanks:[
+   {num:3,ans:"heavy workload",explain:"\"Heavy workload\" = lots of tasks. Busy café hours = high volume of orders and tasks = heavy workload. We \"handle\" a heavy workload."},
+   {num:4,ans:"in charge of",explain:"\"Be in charge of\" + gerund/noun = be responsible for. \"Got to be in charge of training\" = I had the responsibility of training others."},
+ ]},
+{topic:"Work & Careers",task:"Task 2",type:"fill",
+ wordBank:["well-paid","qualified","heavy workload","in charge of","get promoted","self-employed"],
+ context:`<strong>What were your responsibilities in that part-time position?</strong><br>During my shifts, I prepared drinks, took orders, and cleaned tables. Even though I didn't <em>(5)</em> in the short time I worked there, it was still a good learning experience.`,
+ blanks:[
+   {num:5,ans:"get promoted",explain:"\"Get promoted\" = move up to a higher role. Short-term jobs rarely lead to promotion. After \"didn't\", use the base form: get (not got)."},
+ ]},
+
+// ══ EDUCATION — Task 1 ══
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"Yesterday, Ms. Jane __________ the ancient Mayan civilization, discussing how they built impressive structures without modern technology.",
+ opts:["A. lectured on","B. peer-pressured","C. dedicated"],ans:0,
+ explanation:"\"Lecture on\" = give a formal talk/class about a topic. A teacher discussing a civilization in class is lecturing on it. \"Peer-pressured\" is a verb but means to pressure others — completely different."},
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"In this digital age, people often share their achievements online, which unexpectedly creates __________ among those who are not following the same paths.",
+ opts:["A. tight deadlines","B. peer pressure","C. useful knowledge"],ans:1,
+ explanation:"\"Peer pressure\" = the influence from people of the same social group. Seeing others' achievements online makes you feel pressured to do the same — that is peer pressure."},
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"As a student, Sarah often has to __________ to finish her assignments on time, so she learns to break down tasks into smaller steps.",
+ opts:["A. gain useful knowledge","B. broaden her horizons","C. work to tight deadlines"],ans:2,
+ explanation:"\"Work to tight deadlines\" = complete tasks within very limited time. Finishing assignments on time with strategies like breaking tasks down is exactly working to tight deadlines."},
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"Studying history helps students __________ about past events and their impacts on society, developing critical thinking skills.",
+ opts:["A. gain useful knowledge","B. work to tight deadlines","C. be dedicated"],ans:0,
+ explanation:"\"Gain useful knowledge\" = acquire helpful information and understanding. Studying history and learning about events/impacts is gaining useful knowledge."},
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"Emily is a __________ student who always puts extra effort into her studies. She attends all her classes and completes assignments on time.",
+ opts:["A. peer-pressured","B. qualified","C. dedicated"],ans:2,
+ explanation:"\"Dedicated\" = committed, hardworking, and focused. Extra effort + attending all classes + on-time assignments are all signs of a dedicated student."},
+{topic:"Education",task:"Task 1",type:"mcq",
+ q:"Traveling to different countries helps people __________ by learning about new cultures and traditions.",
+ opts:["A. gain useful knowledge","B. work to tight deadlines","C. broaden their horizons"],ans:2,
+ explanation:"\"Broaden one's horizons\" = expand your view and experience of the world. Travel exposes you to new cultures, which literally broadens your perspective — your horizons."},
+
+// EDUCATION — Task 2
+{topic:"Education",task:"Task 2",type:"fill",
+ wordBank:["lecture on","gain useful knowledge","dedicated","peer pressure","broaden horizons","work to tight deadlines"],
+ context:`<strong>How has education changed in your country in the last 10 years?</strong><br>Teachers no longer just <em>(1)</em> subjects; they use videos and interactive activities to make lessons more engaging. This helps students <em>(2)</em> in a more interesting way.`,
+ blanks:[
+   {num:1,ans:"lecture on",explain:"\"Lecture on\" = talk formally about a subject. After \"just\", use base form: \"lecture on\" (not \"lectured on\"). The contrast is between passive lecturing and active interactive teaching."},
+   {num:2,ans:"gain useful knowledge",explain:"Interactive activities help students acquire knowledge more effectively — they \"gain useful knowledge\" in an engaging way."},
+ ]},
+{topic:"Education",task:"Task 2",type:"fill",
+ wordBank:["lecture on","gain useful knowledge","dedicated","peer pressure","broaden horizons","work to tight deadlines"],
+ context:`<strong>Do you think computers will one day replace teachers?</strong><br>In my opinion, computers cannot take the place of teachers. A <em>(3)</em> teacher does more than provide information — they foster a positive learning environment and develop critical thinking.`,
+ blanks:[
+   {num:3,ans:"dedicated",explain:"\"A dedicated teacher\" = a teacher who is fully committed and hardworking. This contrasts with a computer, highlighting the human qualities of a great teacher."},
+ ]},
+{topic:"Education",task:"Task 2",type:"fill",
+ wordBank:["lecture on","gain useful knowledge","dedicated","peer pressure","broaden horizons","work to tight deadlines"],
+ context:`<strong>What courses should be added in high school?</strong><br>Many students face <em>(4)</em>, so learning how to deal with it would really help. Classes on money management and communication skills would help students <em>(5)</em> for their future.`,
+ blanks:[
+   {num:4,ans:"peer pressure",explain:"\"Face peer pressure\" = experience influence from peers. High school students are very vulnerable to peer pressure from classmates."},
+   {num:5,ans:"gain useful knowledge",explain:"Money management and communication classes provide practical, real-world knowledge — students \"gain useful knowledge\" for life."},
+ ]},
+
+// ══ SPORTS & HEALTH — Task 1 ══
+{topic:"Sports & Health",task:"Task 1",type:"mcq",
+ q:"Laura, identified as a/an __________, seeks out various physical activities to stay active. She loves yoga, dance, and cycling, and can __________ to reach her desired body weight.",
+ opts:["A. keep-fit enthusiast / get lean","B. athlete / take up a sport","C. player / boost energy"],ans:0,
+ explanation:"A \"keep-fit enthusiast\" = someone who loves staying fit through various activities (not competing). \"Get lean\" = reduce body fat to reach a desired weight. Laura's goal is fitness, not competition, so she's a keep-fit enthusiast."},
+{topic:"Sports & Health",task:"Task 1",type:"mcq",
+ q:"Many people decide to __________, such as running, swimming, or joining a team sport. These activities improve health and are a lot of fun.",
+ opts:["A. get lean","B. take up a sport","C. get rid of negative energies"],ans:1,
+ explanation:"\"Take up a sport\" = start doing a sport for the first time. The examples (running, swimming, joining a team) are all sports someone decides to start — take up a sport."},
+{topic:"Sports & Health",task:"Task 1",type:"mcq",
+ q:"If your goal is to reduce body fat through diet and exercise while keeping your muscle mass, your aim is to __________.",
+ opts:["A. take up a sport","B. improve your fitness level","C. get lean"],ans:2,
+ explanation:"\"Get lean\" = reduce body fat while maintaining muscle. This is specifically about body composition (fat vs. muscle), not just general fitness improvement."},
+{topic:"Sports & Health",task:"Task 1",type:"mcq",
+ q:"When involved in competitive sports, __________ should skillfully manage their energy levels and pace themselves throughout the game.",
+ opts:["A. athletes","B. keep-fit enthusiasts","C. players"],ans:0,
+ explanation:"\"Athletes\" = people who compete in sports professionally or seriously. Competitive sport + energy management + pacing = the world of athletes. Keep-fit enthusiasts exercise for fun/health, not competition."},
+{topic:"Sports & Health",task:"Task 1",type:"mcq",
+ q:"Engaging in physical activities like sports or exercise routines is an excellent way __________, allowing individuals to feel more balanced.",
+ opts:["A. to get lean","B. to take up a sport","C. to get rid of negative energies"],ans:2,
+ explanation:"\"Get rid of negative energies\" = release stress, bad emotions, and tension. Feeling \"more balanced\" after exercise matches getting rid of negative energies. Getting lean is about the body, not feelings."},
+
+// SPORTS & HEALTH — Task 2
+{topic:"Sports & Health",task:"Task 2",type:"fill",
+ wordBank:["athletes","keep-fit enthusiasts","to get lean","get rid of negative energies","take up a sport","to get lean"],
+ context:`Football is the most popular sport in my country. Many young people dream of becoming professional <em>(1)</em>. Besides that, there are a lot of <em>(2)</em> who enjoy activities like running, yoga, and cycling.<br><br>Playing a sport regularly is a great way <em>(3)</em> and stay strong. It also helps people <em>(4)</em> by reducing stress.<br><br>I prefer playing sports myself because it helps me <em>(5)</em> and feel more active. That's why I decided to <em>(6)</em>, and now I play badminton with my friends every weekend.`,
+ blanks:[
+   {num:1,ans:"athletes",explain:"Professional competitors in sport are called \"athletes\". Young people dream of competing professionally, so \"athletes\" is correct (not keep-fit enthusiasts, who just exercise for health)."},
+   {num:2,ans:"keep-fit enthusiasts",explain:"People who enjoy running, yoga, cycling for fitness (not competition) are \"keep-fit enthusiasts\" — they are enthusiastic about keeping fit."},
+   {num:3,ans:"to get lean",explain:"\"A great way to get lean\" = sport helps reduce body fat and stay in shape. This is an infinitive of purpose after \"way\"."},
+   {num:4,ans:"get rid of negative energies",explain:"\"Get rid of negative energies\" = release stress. Reducing stress is exactly getting rid of negative energy."},
+   {num:5,ans:"to get lean",explain:"Playing sport helps the speaker reduce fat and stay fit — \"to get lean\". Same phrase as blank 3, reinforcing the personal benefit."},
+   {num:6,ans:"take up a sport",explain:"\"Decided to take up a sport\" = decided to start doing a sport. The result (playing badminton every weekend) confirms this was a new activity they started."},
+ ]},
+
+// ══ ENVIRONMENT — Task 1 ══
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"The government started a campaign to __________ of the dangers of smoking. Now, more people understand how smoking can harm their health.",
+ opts:["A. recycle waste","B. raise people's awareness","C. reduce exhaust fumes"],ans:1,
+ explanation:"\"Raise people's awareness\" = make the public more informed about an issue. A campaign that makes people understand dangers is raising awareness. Recycling and reducing fumes are unrelated to smoking."},
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"In cities with __________, individuals may experience health problems such as coughing and difficult breathing.",
+ opts:["A. poor air quality","B. exhaust fumes","C. eco-friendly products"],ans:0,
+ explanation:"\"Poor air quality\" = polluted, unhealthy air in general. Coughing and breathing difficulties are symptoms of living in an area with poor air quality. Exhaust fumes are a cause, not the overall condition."},
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"In heavily __________ areas, communities struggle to access clean and safe drinking water.",
+ opts:["A. eco-friendly","B. recycled","C. polluted"],ans:2,
+ explanation:"\"Polluted\" = contaminated with harmful substances. If an area is heavily polluted, clean water is scarce. \"Eco-friendly\" means environmentally safe — the opposite meaning."},
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"In cities with great amounts of traffic, air quality is often affected by __________ emitted from vehicles, leading to pollution-related health concerns.",
+ opts:["A. exhaust fumes","B. poor air quality","C. eco-friendly products"],ans:0,
+ explanation:"\"Exhaust fumes\" = the gases/smoke released by vehicles. They are \"emitted\" (released) from vehicles. Poor air quality is the result, not what is emitted."},
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"To reduce their impact on the environment, many people choose __________ which are made from sustainable materials such as paper, leaves, or recycled plastic.",
+ opts:["A. exhaust fumes","B. eco-friendly products","C. poor air quality"],ans:1,
+ explanation:"\"Eco-friendly products\" = items that are not harmful to the environment. Products made from sustainable materials (paper, leaves) are eco-friendly by definition."},
+{topic:"Environment",task:"Task 1",type:"mcq",
+ q:"To reduce the amount of garbage sent to landfill, many cities are encouraging their residents to __________.",
+ opts:["A. raise awareness","B. use eco-friendly products","C. recycle waste"],ans:2,
+ explanation:"\"Recycle waste\" = process used materials so they can be used again, reducing landfill. This directly addresses garbage reduction. Eco-friendly products help, but recycling is the most direct answer here."},
+
+// ENVIRONMENT — Task 2
+{topic:"Environment",task:"Task 2",type:"fill",
+ wordBank:["poor air quality","exhaust fumes","eco-friendly products","recycling waste","raise people's awareness","polluted"],
+ context:`An environmental problem in my community is <em>(1)</em> in urban areas. It is often caused by <em>(2)</em> from vehicles and industrial activities.<br><br>The effects of <em>(3)</em> are serious to both human health and the environment. The polluted atmosphere could lead to respiratory diseases such as asthma.<br><br>To solve this problem, citizens should be encouraged to use <em>(4)</em>, such as tote bags and glass bottles. In addition, we can improve air quality by actively <em>(5)</em> — for example, reusing old newspaper and cardboard.`,
+ blanks:[
+   {num:1,ans:"poor air quality",explain:"\"Poor air quality\" = the general state of polluted air in urban areas. This is the main environmental problem being described."},
+   {num:2,ans:"exhaust fumes",explain:"\"Exhaust fumes\" are emitted by vehicles and factories — they are the cause of poor air quality. We say \"caused by exhaust fumes\"."},
+   {num:3,ans:"poor air quality",explain:"The second paragraph discusses the effects of the same problem introduced in paragraph 1 — poor air quality. Repetition is intentional to reinforce the topic."},
+   {num:4,ans:"eco-friendly products",explain:"Tote bags and glass bottles are \"eco-friendly products\" — reusable, sustainable items that reduce environmental harm."},
+   {num:5,ans:"recycling waste",explain:"\"Actively recycling waste\" = making the effort to recycle materials. Reusing newspaper and cardboard are examples of recycling waste."},
+ ]},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let selectedTopics=[...TOPICS];
+let questions=[];
+let current=0;
+let score=0;
+let phase="start";
+let fillState={};
+let topicStats={};
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function startQuiz(){
+  const filtered=QUESTIONS.filter(q=>selectedTopics.includes(q.topic));
+  if(!filtered.length) return;
+  const topicOrder=shuffle([...new Set(filtered.map(q=>q.topic))]);
+  questions=[];
+  topicOrder.forEach(t=>questions.push(...filtered.filter(q=>q.topic===t)));
+  current=0;score=0;phase="quiz";
+  topicStats={};TOPICS.forEach(t=>topicStats[t]={got:0,total:0});
+  fillState={};
+  render();
+}
+
+function getMaxScore(){
+  return questions.reduce((acc,q)=>q.type==="mcq"?acc+1:acc+q.blanks.length,0);
+}
+
+function getResultMsg(pct){
+  if(pct===100) return "🎉 Perfect score! Outstanding work!";
+  if(pct>=80) return "🌟 Great job! You have a strong vocabulary.";
+  if(pct>=60) return "👍 Good effort! Keep reviewing the tricky topics.";
+  return "📚 Keep practicing — you'll improve with each review!";
+}
+
+function render(){
+  const app=document.getElementById("app");
+  if(phase==="start"){renderStart(app);return;}
+  if(phase==="result"){renderResult(app);return;}
+  renderQuestion(app);
+}
+
+function renderStart(app){
+  app.innerHTML=`
+    <h1>Vocabulary Quiz</h1>
+    <p class="subtitle">${QUESTIONS.length} questions · MCQ &amp; Fill in the blank · 6 topics</p>
+    <div class="filter-label">Select topics to practise:</div>
+    <div class="filter-row" id="filters"></div>
+    <p class="q-count" id="q-count"></p>
+    <div class="start-center"><button class="btn-start" id="btn-start" onclick="startQuiz()">Start quiz</button></div>`;
+  renderFilters();
+}
+
+function renderFilters(){
+  const f=document.getElementById("filters");
+  if(!f)return;
+  f.innerHTML=TOPICS.map(t=>`<button class="filter-btn ${selectedTopics.includes(t)?'active':''}" onclick="toggleTopic('${t.replace(/'/g,"\\'")}')">${t}</button>`).join("");
+  const cnt=QUESTIONS.filter(q=>selectedTopics.includes(q.topic)).length;
+  const el=document.getElementById("q-count");
+  if(el) el.textContent=`${cnt} question${cnt!==1?'s':''} selected`;
+  const btn=document.getElementById("btn-start");
+  if(btn) btn.disabled=cnt===0;
+}
+
+function toggleTopic(t){
+  if(selectedTopics.includes(t)){if(selectedTopics.length===1)return;selectedTopics=selectedTopics.filter(x=>x!==t);}
+  else{selectedTopics.push(t);}
+  renderFilters();
+}
+
+function renderQuestion(app){
+  const q=questions[current];
+  const pct=Math.round((current/questions.length)*100);
+  const maxScore=getMaxScore();
+  let inner=`
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-info"><span>Question ${current+1} / ${questions.length}</span><span>Score: ${score} / ${maxScore}</span></div>
+    </div>
+    <span class="task-badge">${q.task}</span><span class="topic-badge">${q.topic}</span><br><br>`;
+  inner+=q.type==="mcq"?renderMCQ(q):renderFill(q);
+  app.innerHTML=inner;
+  if(q.type==="fill"){
+    if(!fillState[current]) fillState[current]={activeBlank:null,selections:{},submitted:false};
+    updateFillUI();
+  }
+}
+
+function renderMCQ(q){
+  return `
+    <div class="q-text">${q.q}</div>
+    <div class="options" id="opts">
+      ${q.opts.map((o,i)=>`<button class="opt-btn" id="opt-${i}" onclick="selectMCQ(${i})">${o}</button>`).join("")}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-row"><span></span>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">${current+1<questions.length?"Next →":"See results"}</button>
+    </div>`;
+}
+
+function renderFill(q){
+  const blanksHtml=q.blanks.map(b=>`
+    <div class="blank-row">
+      <span class="blank-num">(${b.num})</span>
+      <div class="blank-col">
+        <div class="blank-box" id="blank-box-${b.num}" onclick="selectBlank(${b.num})">click to fill</div>
+        <div class="blank-explain" id="blank-exp-${b.num}"></div>
+      </div>
+    </div>`).join("");
+  const wbHtml=q.wordBank.map((w,i)=>`<button class="wb-chip" id="wb-${i}" onclick="selectWord('${w.replace(/'/g,"\\'")}')">${w}</button>`).join("");
+  return `
+    <div class="fill-area">
+      <div class="fill-context">${q.context}</div>
+      <div class="word-bank-label">Word Bank — click a blank, then click a word:</div>
+      <div class="word-bank">${wbHtml}</div>
+      <div class="blanks-list">${blanksHtml}</div>
+      <br>
+      <button class="fill-submit" id="fill-submit" onclick="submitFill()" disabled>Check answers</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-row"><span></span>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">${current+1<questions.length?"Next →":"See results"}</button>
+    </div>`;
+}
+
+// ─── MCQ LOGIC ───────────────────────────────────────────────────────────────
+function selectMCQ(i){
+  const q=questions[current];
+  const btns=document.querySelectorAll(".opt-btn");
+  const fb=document.getElementById("feedback");
+  const btn=document.getElementById("btn-next");
+  btns.forEach(b=>b.disabled=true);
+  if(i===q.ans){
+    btns[i].classList.add("correct");
+    score++;topicStats[q.topic].got++;
+    fb.className="feedback show correct";
+    fb.innerHTML=`<div class="feedback-title">✓ Correct!</div><div class="feedback-why">💡 ${q.explanation}</div>`;
+  } else {
+    btns[i].classList.add("wrong");
+    btns[q.ans].classList.add("reveal");
+    fb.className="feedback show wrong";
+    fb.innerHTML=`<div class="feedback-title">✗ Incorrect</div><div class="feedback-ans">✅ Correct answer: <strong>${q.opts[q.ans]}</strong></div><div class="feedback-why">💡 ${q.explanation}</div>`;
+  }
+  topicStats[q.topic].total++;
+  btn.classList.add("show");
+}
+
+// ─── FILL LOGIC ──────────────────────────────────────────────────────────────
+function updateFillUI(){
+  const q=questions[current];
+  const st=fillState[current];
+  if(!st)return;
+  const usedCounts={};
+  Object.values(st.selections).forEach(w=>{usedCounts[w]=(usedCounts[w]||0)+1;});
+  q.blanks.forEach(b=>{
+    const box=document.getElementById(`blank-box-${b.num}`);
+    if(!box)return;
+    const val=st.selections[b.num];
+    box.classList.remove("filled","active-b","correct-b","wrong-b");
+    box.textContent=val||"click to fill";
+    if(val) box.classList.add("filled");
+    if(!st.submitted&&st.activeBlank===b.num) box.classList.add("active-b");
+  });
+  q.wordBank.forEach((w,i)=>{
+    const chip=document.getElementById(`wb-${i}`);
+    if(!chip)return;
+    chip.classList.remove("used");
+    chip.disabled=st.submitted;
+    const maxUse=q.blanks.filter(b=>b.ans===w).length||1;
+    if((usedCounts[w]||0)>=maxUse) chip.classList.add("used");
+  });
+  const allFilled=q.blanks.every(b=>st.selections[b.num]);
+  const submitBtn=document.getElementById("fill-submit");
+  if(submitBtn) submitBtn.disabled=!allFilled||st.submitted;
+}
+
+function selectBlank(num){
+  const st=fillState[current];
+  if(!st||st.submitted)return;
+  st.activeBlank=num;
+  updateFillUI();
+}
+
+function selectWord(word){
+  const st=fillState[current];
+  if(!st||st.submitted)return;
+  const q=questions[current];
+  const usedCounts={};
+  Object.values(st.selections).forEach(w=>{usedCounts[w]=(usedCounts[w]||0)+1;});
+  const maxUse=q.blanks.filter(b=>b.ans===word).length||1;
+  const alreadyUsed=(usedCounts[word]||0)>=maxUse;
+  if(st.activeBlank!==null){
+    if(st.selections[st.activeBlank]===word){
+      delete st.selections[st.activeBlank];
+    } else if(!alreadyUsed){
+      st.selections[st.activeBlank]=word;
+      const blanks=q.blanks.map(b=>b.num);
+      const idx=blanks.indexOf(st.activeBlank);
+      const next=blanks.slice(idx+1).find(n=>!st.selections[n])||blanks.find(n=>!st.selections[n]);
+      st.activeBlank=next||null;
+    }
+    updateFillUI();
+  }
+}
+
+function submitFill(){
+  const q=questions[current];
+  const st=fillState[current];
+  if(!st||st.submitted)return;
+  st.submitted=true;
+  let correct=0;
+  q.blanks.forEach(b=>{
+    const box=document.getElementById(`blank-box-${b.num}`);
+    const expEl=document.getElementById(`blank-exp-${b.num}`);
+    const isCorrect=normalize(st.selections[b.num])===normalize(b.ans);
+    if(isCorrect){
+      correct++;score++;
+      if(box) box.classList.add("correct-b");
+      if(expEl){
+        expEl.className="blank-explain show correct-exp";
+        expEl.innerHTML=`✓ Correct! &nbsp;💡 ${b.explain}`;
+      }
+    } else {
+      if(box) box.classList.add("wrong-b");
+      if(expEl){
+        expEl.className="blank-explain show wrong-exp";
+        expEl.innerHTML=`✗ Correct answer: <strong>${b.ans}</strong><br>💡 ${b.explain}`;
+      }
+    }
+  });
+  topicStats[q.topic].got+=correct;
+  topicStats[q.topic].total+=q.blanks.length;
+  const fb=document.getElementById("feedback");
+  const btn=document.getElementById("btn-next");
+  if(correct===q.blanks.length){
+    fb.className="feedback show correct";
+    fb.innerHTML=`<div class="feedback-title">✓ All ${correct} blank${correct>1?'s':''} correct!</div>`;
+  } else if(correct>0){
+    fb.className="feedback show partial";
+    fb.innerHTML=`<div class="feedback-title">${correct} / ${q.blanks.length} correct — see explanations above each blank.</div>`;
+  } else {
+    fb.className="feedback show wrong";
+    fb.innerHTML=`<div class="feedback-title">✗ No correct answers — see explanations above each blank.</div>`;
+  }
+  btn.classList.add("show");
+  document.getElementById("fill-submit").disabled=true;
+  updateFillUI();
+}
+
+function normalize(s){return(s||"").toLowerCase().trim().replace(/\s+/g," ");}
+
+function nextQ(){
+  current++;
+  fillState[current]={activeBlank:null,selections:{},submitted:false};
+  if(current>=questions.length) phase="result";
+  render();
+}
+
+function renderResult(app){
+  const maxScore=getMaxScore();
+  const pct=maxScore?Math.round((score/maxScore)*100):0;
+  const rows=Object.entries(topicStats).filter(([,s])=>s.total>0)
+    .map(([t,s])=>`<div class="breakdown-row"><span>${t}</span><span>${s.got} / ${s.total}</span></div>`).join("");
+  app.innerHTML=`
+    <div class="result-box">
+      <div class="result-score">${score} / ${maxScore}</div>
+      <div class="result-label">${pct}% correct</div>
+      <div class="result-msg">${getResultMsg(pct)}</div>
+      <div class="result-breakdown">
+        <div class="breakdown-title">By topic:</div>${rows}
+      </div>
+      <div class="btn-group">
+        <button class="btn-retry" onclick="phase='start';render()">Change topics</button>
+        <button class="btn-retry primary" onclick="startQuiz()">Try again</button>
+      </div>
+    </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
